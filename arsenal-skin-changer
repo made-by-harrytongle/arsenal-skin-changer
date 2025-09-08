@@ -1,0 +1,182 @@
+-- Arsenal Melee Changer (Round Rainbow UI - Draggable + Thank You Popup + Extra Knives)
+
+local player = game.Players.LocalPlayer
+local data = player:WaitForChild("Data")
+local meleeValue = data:WaitForChild("Melee")
+local fakeTool
+local hitboxSize, stabCooldown, lastStab = 15, 0.1, 0
+
+-- Stab function
+local function stab()
+    local now = tick()
+    if now - lastStab < stabCooldown then return end
+    lastStab = now
+
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    for _, other in ipairs(game.Players:GetPlayers()) do
+        if other ~= player and other.Character then
+            local ohRoot = other.Character:FindFirstChild("HumanoidRootPart")
+            local humanoid = other.Character:FindFirstChild("Humanoid")
+            if ohRoot and humanoid then
+                if (root.Position - ohRoot.Position).Magnitude <= hitboxSize then
+                    humanoid:TakeDamage(25)
+                    print("Stabbed:", other.Name)
+                end
+            end
+        end
+    end
+end
+
+-- Fake tool setup
+local function createFakeTool()
+    if fakeTool then fakeTool:Destroy() end
+    fakeTool = Instance.new("Tool")
+    fakeTool.Name = "Custom Knife"
+    fakeTool.RequiresHandle = false
+    fakeTool.CanBeDropped = false
+    fakeTool.Parent = player.Backpack
+    fakeTool.Activated:Connect(stab)
+end
+createFakeTool()
+
+-- Equip function
+local function equipWeapon(name, value)
+    meleeValue.Value = value
+    print("Equipped:", name)
+end
+
+-- Weapons
+local weapons = {
+    "Classic Sword","Big Sip","The Illumina","When Day Breaks","Moai","Saber",
+    "Coal Scythe","Smug Egg","Night's Edge","The Windforce","The Ice Dagger",
+    "The Darkheart","The Firebrand","Bloxy","Ban Hammer","Silver Bell",
+    "Swordfish","ACT Trophy","Butterfly Knife","Karambit","Bone Karambit",
+    -- ✅ Newly added knives
+    "Icicle","Bouquet","Banana","Sip O' Stink"
+}
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+local ToggleButton = Instance.new("TextButton", ScreenGui)
+local Border = Instance.new("UIStroke", MainFrame)
+local Scrolling = Instance.new("ScrollingFrame", MainFrame)
+
+-- MainFrame setup
+MainFrame.Size = UDim2.new(0, 300, 0, 350)
+MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Visible = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+
+-- Border (rainbow effect)
+Border.Thickness = 3
+Border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+task.spawn(function()
+    local t = 0
+    while task.wait(0.05) do
+        t += 0.05
+        Border.Color = Color3.fromHSV((t % 5) / 5, 1, 1)
+    end
+end)
+
+-- ToggleButton
+ToggleButton.Size = UDim2.new(0, 140, 0, 45)
+ToggleButton.Position = UDim2.new(0.5, -70, 0.05, -50)
+ToggleButton.Text = "Close Script"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextScaled = true
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 12)
+
+local toggleState = true
+ToggleButton.MouseButton1Click:Connect(function()
+    toggleState = not toggleState
+    MainFrame.Visible = toggleState
+    ToggleButton.Text = toggleState and "Close Script" or "Open Script"
+end)
+
+-- Scrolling frame
+Scrolling.Size = UDim2.new(1, -10, 1, -10)
+Scrolling.Position = UDim2.new(0, 5, 0, 5)
+Scrolling.CanvasSize = UDim2.new(0, 0, 0, #weapons * 35)
+Scrolling.ScrollBarThickness = 6
+Scrolling.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Instance.new("UICorner", Scrolling).CornerRadius = UDim.new(0, 10)
+
+-- Add buttons for weapons
+for i, weapon in ipairs(weapons) do
+    local btn = Instance.new("TextButton", Scrolling)
+    btn.Size = UDim2.new(1, -10, 0, 30)
+    btn.Position = UDim2.new(0, 5, 0, (i - 1) * 35)
+    btn.Text = weapon
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextScaled = true
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+    btn.MouseButton1Click:Connect(function()
+        equipWeapon(weapon, weapon)
+    end)
+end
+
+-- ✅ Thank You Popup GUI
+local Popup = Instance.new("Frame", ScreenGui)
+Popup.Size = UDim2.new(0, 250, 0, 100)
+Popup.Position = UDim2.new(1, -270, 1, -120)
+Popup.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Popup.Active = true
+Popup.Draggable = true
+Instance.new("UICorner", Popup).CornerRadius = UDim.new(0, 12)
+
+local PopupBorder = Instance.new("UIStroke", Popup)
+PopupBorder.Thickness = 2
+PopupBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+task.spawn(function()
+    local t = 0
+    while task.wait(0.05) do
+        t += 0.05
+        PopupBorder.Color = Color3.fromHSV((t % 5) / 5, 1, 1)
+    end
+end)
+
+local PopupLabel = Instance.new("TextLabel", Popup)
+PopupLabel.Size = UDim2.new(1, -10, 0.5, -5)
+PopupLabel.Position = UDim2.new(0, 5, 0, 5)
+PopupLabel.Text = "THANK YOU FOR USING THIS SCRIPT ❤"
+PopupLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+PopupLabel.Font = Enum.Font.GothamBold
+PopupLabel.TextScaled = true
+PopupLabel.BackgroundTransparency = 1
+
+local Credit = Instance.new("TextLabel", Popup)
+Credit.Size = UDim2.new(1, -10, 0.3, -5)
+Credit.Position = UDim2.new(0, 5, 0.55, 0)
+Credit.Text = "Made by harrytongle"
+Credit.TextColor3 = Color3.fromRGB(200, 200, 200)
+Credit.Font = Enum.Font.Gotham
+Credit.TextScaled = true
+Credit.BackgroundTransparency = 1
+
+local CloseBtn = Instance.new("TextButton", Popup)
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextScaled = true
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    Popup:Destroy()
+end)
