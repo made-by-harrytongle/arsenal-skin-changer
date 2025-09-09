@@ -1,4 +1,4 @@
--- Arsenal Melee Changer (Round Rainbow UI - Draggable + Thank You Popup + Extra Knives)
+-- Arsenal Melee Changer (Crimson UI - Red Border - Search Bar - Thank You Popup)
 
 local player = game.Players.LocalPlayer
 local data = player:WaitForChild("Data")
@@ -54,7 +54,6 @@ local weapons = {
     "Coal Scythe","Smug Egg","Night's Edge","The Windforce","The Ice Dagger",
     "The Darkheart","The Firebrand","Bloxy","Ban Hammer","Silver Bell",
     "Swordfish","ACT Trophy","Butterfly Knife","Karambit","Bone Karambit",
-    -- ✅ Newly added knives
     "Icicle","Bouquet","Banana","Sip O' Stink"
 }
 
@@ -68,28 +67,22 @@ local Scrolling = Instance.new("ScrollingFrame", MainFrame)
 -- MainFrame setup
 MainFrame.Size = UDim2.new(0, 300, 0, 350)
 MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BackgroundColor3 = Color3.fromRGB(220, 20, 60) -- Crimson background
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
 
--- Border (rainbow effect)
+-- Border (Red color)
 Border.Thickness = 3
+Border.Color = Color3.fromRGB(255, 0, 0)
 Border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-task.spawn(function()
-    local t = 0
-    while task.wait(0.05) do
-        t += 0.05
-        Border.Color = Color3.fromHSV((t % 5) / 5, 1, 1)
-    end
-end)
 
 -- ToggleButton
 ToggleButton.Size = UDim2.new(0, 140, 0, 45)
 ToggleButton.Position = UDim2.new(0.5, -70, 0.05, -50)
 ToggleButton.Text = "Close Script"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(180, 0, 40)
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.TextScaled = true
@@ -104,50 +97,92 @@ ToggleButton.MouseButton1Click:Connect(function()
     ToggleButton.Text = toggleState and "Close Script" or "Open Script"
 end)
 
+-- ✅ Search Bar (REAL TEXT version)
+local SearchBox = Instance.new("TextBox", MainFrame)
+SearchBox.Size = UDim2.new(1, -20, 0, 30)
+SearchBox.Position = UDim2.new(0, 10, 0, 10)
+SearchBox.Text = "(Search Knives...)" -- starts as text
+SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBox.BackgroundColor3 = Color3.fromRGB(150, 0, 30)
+SearchBox.Font = Enum.Font.GothamSemibold
+SearchBox.TextScaled = true
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 8)
+
+SearchBox.Focused:Connect(function()
+    if SearchBox.Text == "(Search Knives...)" then
+        SearchBox.Text = ""
+    end
+end)
+
+SearchBox.FocusLost:Connect(function()
+    if SearchBox.Text == "" then
+        SearchBox.Text = "(Search Knives...)"
+    end
+end)
+
 -- Scrolling frame
-Scrolling.Size = UDim2.new(1, -10, 1, -10)
-Scrolling.Position = UDim2.new(0, 5, 0, 5)
+Scrolling.Size = UDim2.new(1, -10, 1, -50)
+Scrolling.Position = UDim2.new(0, 5, 0, 45)
 Scrolling.CanvasSize = UDim2.new(0, 0, 0, #weapons * 35)
 Scrolling.ScrollBarThickness = 6
-Scrolling.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Scrolling.BackgroundColor3 = Color3.fromRGB(100, 0, 30)
 Instance.new("UICorner", Scrolling).CornerRadius = UDim.new(0, 10)
 
 -- Add buttons for weapons
-for i, weapon in ipairs(weapons) do
-    local btn = Instance.new("TextButton", Scrolling)
-    btn.Size = UDim2.new(1, -10, 0, 30)
-    btn.Position = UDim2.new(0, 5, 0, (i - 1) * 35)
-    btn.Text = weapon
-    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextScaled = true
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+local weaponButtons = {}
 
-    btn.MouseButton1Click:Connect(function()
-        equipWeapon(weapon, weapon)
-    end)
+local function refreshButtons(filter)
+    for _, btn in ipairs(weaponButtons) do
+        btn:Destroy()
+    end
+    weaponButtons = {}
+
+    local yPos = 0
+    for _, weapon in ipairs(weapons) do
+        if filter == "" or string.find(string.lower(weapon), string.lower(filter)) then
+            local btn = Instance.new("TextButton", Scrolling)
+            btn.Size = UDim2.new(1, -10, 0, 30)
+            btn.Position = UDim2.new(0, 5, 0, yPos)
+            btn.Text = weapon
+            btn.BackgroundColor3 = Color3.fromRGB(180, 0, 40)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.GothamSemibold
+            btn.TextScaled = true
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+            btn.MouseButton1Click:Connect(function()
+                equipWeapon(weapon, weapon)
+            end)
+
+            table.insert(weaponButtons, btn)
+            yPos = yPos + 35
+        end
+    end
+
+    Scrolling.CanvasSize = UDim2.new(0, 0, 0, yPos)
 end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    if SearchBox.Text ~= "(Search Knives...)" then
+        refreshButtons(SearchBox.Text)
+    end
+end)
+
+refreshButtons("")
 
 -- ✅ Thank You Popup GUI
 local Popup = Instance.new("Frame", ScreenGui)
 Popup.Size = UDim2.new(0, 250, 0, 100)
 Popup.Position = UDim2.new(1, -270, 1, -120)
-Popup.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Popup.BackgroundColor3 = Color3.fromRGB(180, 0, 40)
 Popup.Active = true
 Popup.Draggable = true
 Instance.new("UICorner", Popup).CornerRadius = UDim.new(0, 12)
 
 local PopupBorder = Instance.new("UIStroke", Popup)
 PopupBorder.Thickness = 2
+PopupBorder.Color = Color3.fromRGB(255, 0, 0)
 PopupBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-task.spawn(function()
-    local t = 0
-    while task.wait(0.05) do
-        t += 0.05
-        PopupBorder.Color = Color3.fromHSV((t % 5) / 5, 1, 1)
-    end
-end)
 
 local PopupLabel = Instance.new("TextLabel", Popup)
 PopupLabel.Size = UDim2.new(1, -10, 0.5, -5)
@@ -162,7 +197,7 @@ local Credit = Instance.new("TextLabel", Popup)
 Credit.Size = UDim2.new(1, -10, 0.3, -5)
 Credit.Position = UDim2.new(0, 5, 0.55, 0)
 Credit.Text = "Made by harrytongle"
-Credit.TextColor3 = Color3.fromRGB(200, 200, 200)
+Credit.TextColor3 = Color3.fromRGB(255, 200, 200)
 Credit.Font = Enum.Font.Gotham
 Credit.TextScaled = true
 Credit.BackgroundTransparency = 1
@@ -172,7 +207,7 @@ CloseBtn.Size = UDim2.new(0, 25, 0, 25)
 CloseBtn.Position = UDim2.new(1, -30, 0, 5)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 20)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextScaled = true
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
